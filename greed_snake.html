@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<meta charset="utf-8">
+	<style type="text/css">
+		body {
+			overflow: hidden;
+		}
+		#snake div {
+			width: 30px;
+			height: 30px;
+			background: green;
+			position: absolute;
+			left: 0;
+			top: 0;
+		}
+
+		#snake .head {
+			z-index: 100;
+		}
+
+		#snake .body {
+			background: yellow;
+		}
+
+		.food {
+			width: 30px;
+			height: 30px;
+			position: absolute;
+			background: red;
+			z-index: -1;
+		}
+
+		[data-type=poison] {
+			background: chocolate;
+		}
+	</style>
+</head>
+<body>
+	<div id="snake">
+		<div class="head" style="left:0px; top:0px;"></div>
+		<div class="body"></div>
+		<div class="body"></div>
+		<div class="body"></div>
+		<div class="body"></div>
+	</div>
+	<script type="text/javascript">
+		var dir = 39;
+		var id;
+		var speed = 30;
+		var interval = 300;
+
+		var bodies = document.querySelectorAll('.body');
+		for(var i = 0; i < bodies.length; i++) {
+			bodies[i].style.background = randomColor();
+		}
+		window.onkeydown = function (evt) {
+			var e = evt || window.event;
+			console.log(e.keyCode);
+			//37===>左，38===>上，39===>右，40===>下
+			if(e.keyCode<37 || e.keyCode>40) {
+				return;
+			}
+			if(Math.abs(dir-e.keyCode) === 2) {
+				//方向相反
+				return;
+			}
+			
+			dir = e.keyCode;
+		}
+
+		function move(dir) {
+			var snake_all = document.querySelectorAll('#snake div');
+			for(var i=snake_all.length - 1; i>0; i--) {
+				snake_all[i].style.left = snake_all[i-1].offsetLeft + 'px';
+				snake_all[i].style.top = snake_all[i-1].offsetTop + 'px';
+			}
+			switch(dir) {
+				case 37:
+					snake_all[0].style.left = snake_all[0].offsetLeft - speed + 'px';
+				break;
+				case 38:
+					snake_all[0].style.top = snake_all[0].offsetTop - speed + 'px';
+				break;
+				case 39:
+					snake_all[0].style.left = snake_all[0].offsetLeft + speed + 'px';
+				break;
+				case 40:
+					snake_all[0].style.top = snake_all[0].offsetTop + speed + 'px';
+				break;
+			}
+			setTimeout(function(){
+				check();
+			}, 0)
+			eat();
+		}
+
+		function check() {
+			//蛇跟墙的
+			var head = document.querySelector('.head');
+			if(head.offsetLeft < 0) {
+				clearInterval(id);
+				alert('挂');
+			}
+
+			if(head.offsetLeft > window.innerWidth - head.offsetWidth) {
+				clearInterval(id);
+				alert('挂');
+			}
+
+
+			if(head.offsetTop < 0) {
+				clearInterval(id);
+				alert('挂');
+			}
+
+			if(head.offsetTop > window.innerHeight - head.offsetHeight) {
+				clearInterval(id);
+				alert('挂');
+			}
+
+			//蛇跟身体
+			var bodies = document.querySelectorAll('.body');
+			for(var i=0; i<bodies.length; i++) {
+				if(head.style.left === bodies[i].style.left && 
+				   head.style.top === bodies[i].style.top) {
+					clearInterval(id);
+					alert('挂');
+					break;
+				}
+			}
+		}
+
+		function eat() {
+			var head = document.querySelector('.head');
+			var foods = document.querySelectorAll('.food');
+			for(var i=0; i<foods.length; i++) {
+				var food = foods[i];
+				if(head.style.left === food.style.left &&
+				   	head.style.top === food.style.top) {
+					food.className = 'body';
+					food.style.background = randomColor();
+					var last = document.querySelector('.body:last-of-type');
+					var last2 = document.querySelector('.body:nth-last-child(2)');
+					if(last.offsetTop === last2.offsetTop) {
+						food.style.top = last.offsetTop + 'px';
+						food.style.left = last.offsetLeft + (last.offsetLeft - last2.offsetLeft) + 'px';
+					}
+
+					if(last.offsetLeft === last2.offsetLeft) {
+						food.style.left = last.offsetLeft + 'px';
+						food.style.top = last.offsetTop + (last.offsetTop - last2.offsetTop) + 'px';
+					}
+
+					// food.style.left = document.querySelector('.body:last-of-type').offsetLeft + 'px';
+					food.style.top = document.querySelector('.body:last-of-type').offsetTop + 'px';
+					document.querySelector('#snake').appendChild(food);
+					if(food.dataset.type === 'poison') {
+						interval -= 50;
+					} else {
+						interval = 300;
+					}
+					lauch();
+					if(Math.floor(Math.random()*100) % 2 === 0) {
+						manhanQuanxi()
+					} else {
+						createFood();
+					}
+				}
+			}
+			
+		}
+
+		function createFood() {
+			var types = ['poison', 'normal'];
+			var food = document.createElement('div');
+			food.className = 'food';
+			var index = Math.floor(Math.random() * types.length);
+			//data-*
+			food.dataset.type = types[index];
+
+			var x = Math.floor(Math.random() * Math.floor(window.innerWidth/30)) * 30;
+			var y = Math.floor(Math.random() * Math.floor(window.innerHeight/30)) * 30;
+			food.style.left = x + 'px';
+			food.style.top = y + 'px';
+			// food.style.top = 0 + 'px';
+			document.body.appendChild(food);
+		}
+
+		function randomColor () {
+			var r = Math.floor(Math.random() * 256);
+			var g = Math.floor(Math.random() * 256);
+			var b = Math.floor(Math.random() * 256);
+
+			return 'rgb(' + r + ',' + g + ',' + b + ')';
+		}
+
+		function lauch() {
+			clearInterval(id);
+			id = setInterval(function () {
+				move(dir)
+			}, interval);
+		}
+
+		function manhanQuanxi() {
+			var foods = document.querySelectorAll('.food');
+			if(foods.length > 0) {
+				return;
+			}
+			for(var i=0; i<10; i++) {
+				createFood();
+			}
+		}
+		lauch();
+		createFood();
+
+		
+	</script>
+</body>
+</html>
